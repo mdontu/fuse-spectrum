@@ -1,0 +1,53 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-x86_64-debug:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install required packages
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ libfuse3-dev pkg-config
+    - uses: actions/checkout@v4
+    - name: Configure
+      run: cmake -DCMAKE_BUILD_TYPE=Debug -B build
+    - name: Build
+      run: cmake --build build -v
+    - name: Install
+      run: sudo cmake --install build -v
+  build-x86_64-release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install required packages
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ libfuse3-dev pkg-config
+    - uses: actions/checkout@v4
+    - name: Configure
+      run: cmake -DCMAKE_BUILD_TYPE=Release -B build
+    - name: Build
+      run: cmake --build build -v
+    - name: Install
+      run: sudo cmake --install build -v
+  build-arm64-debug:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - name: Install required packages
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ libfuse3-dev pkg-config
+    - uses: actions/checkout@v4
+    - name: Configure
+      run: cmake -DCMAKE_BUILD_TYPE=Debug -B build
+    - name: Build
+      run: cmake --build build -v
+    - name: Install
+      run: sudo cmake --install build -v
+  build-arm64-release:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - name: Install required packages
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ libfuse3-dev pkg-config
+    - uses: actions/checkout@v4
+    - name: Configure
+      run: cmake -DCMAKE_BUILD_TYPE=Release -B build
+    - name: Build
+      run: cmake --build build -v
+    - name: Install
+      run: sudo cmake --install build -v

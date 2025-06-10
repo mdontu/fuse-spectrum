@@ -1,5 +1,7 @@
 # fuse driver for ZX Spectrum disk images
 
+![Build](https://github.com/mdontu/fuse-spectrum/workflows/CI/badge.svg)
+
 ## Usage
 
 ```shell
