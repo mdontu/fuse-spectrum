@@ -1,2 +1,2 @@
 # SPDX-License-Identifier: GPL-2.0
-Checks: '-*,cppcoreguidelines-*,performance-*,-cppcoreguidelines-pro-type-reinterpret-cast,-cppcoreguidelines-pro-bounds-pointer-arithmetic'
+Checks: '-*,cppcoreguidelines-*,performance-*,-cppcoreguidelines-pro-type-reinterpret-cast,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-avoid-magic-numbers'
