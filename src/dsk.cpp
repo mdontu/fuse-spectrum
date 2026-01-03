@@ -67,7 +67,15 @@ DSK::DSK(const fs::path& path)
 
 				info.track_ = Disk::read8(in);
 				info.side_  = Disk::read8(in);
-				info.id_    = Disk::read8(in);
+
+				info.id_ = Disk::read8(in);
+				if (info.id_ >= 0x41 && info.id_ <= 0x7f)
+					// Amstrad CPC system disk
+					info.id_ -= 0x40;
+				else if (info.id_ >= 0xc1 && info.id_ <= 0xc9)
+					// Amstrad CPC data disk
+					info.id_ -= 0xc0;
+
 				info.size_  = Disk::read8(in);
 				info.sreg1_ = Disk::read8(in);
 				info.sreg2_ = Disk::read8(in);
@@ -143,7 +151,15 @@ DSK::DSK(const fs::path& path)
 
 					info.track_      = Disk::read8(in);
 					info.side_       = Disk::read8(in);
-					info.id_         = Disk::read8(in);
+
+					info.id_ = Disk::read8(in);
+					if (info.id_ >= 0x41 && info.id_ <= 0x7f)
+						// Amstrad CPC system disk
+						info.id_ -= 0x40;
+					else if (info.id_ >= 0xc1 && info.id_ <= 0xc9)
+						// Amstrad CPC data disk
+						info.id_ -= 0xc0;
+
 					info.size_       = Disk::read8(in);
 					info.sreg1_      = Disk::read8(in);
 					info.sreg2_      = Disk::read8(in);
