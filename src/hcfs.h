@@ -11,10 +11,10 @@
 #include "disk.h"
 #include "filesystem.h"
 
-constexpr auto HCFS_RECORD_SIZE = 128u;
-constexpr auto HCFS_BLOCK_SIZE = 2048u;
-constexpr unsigned char HCFS_FREE_BYTE = 0xe5;
-constexpr auto HCFS_FILENAME_MAXSIZE = 11u;
+constexpr auto HCFS_RECORD_SIZE          = 128u;
+constexpr auto HCFS_BLOCK_SIZE           = 2048u;
+constexpr unsigned char HCFS_FREE_BYTE   = 0xe5;
+constexpr auto HCFS_FILENAME_MAXSIZE     = 11u;
 constexpr auto HCFS_MAX_ALLOCATION_UNITS = 8u;
 
 // BASIC 3.5" format
@@ -112,7 +112,7 @@ struct FATEntry {
 };
 #pragma pack(pop)
 
-class HCFS final: public Filesystem {
+class HCFS final : public Filesystem {
 	static constexpr auto interleave640_ = std::to_array<unsigned char>({0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15});
 	static constexpr auto interleave320_ = std::to_array<unsigned char>({0, 2, 4, 6, 8, 1, 3, 5, 7});
 	static const DiskParameterBlock dpb_;
@@ -154,7 +154,8 @@ public:
 
 	int release(const char* path, struct fuse_file_info* info) override;
 
-	int readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t offset, struct fuse_file_info* info, enum fuse_readdir_flags flags) override;
+	int readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t offset, struct fuse_file_info* info,
+	            enum fuse_readdir_flags flags) override;
 
 	int create(const char* path, mode_t mode, struct fuse_file_info* info) override;
 

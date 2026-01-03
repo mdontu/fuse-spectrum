@@ -25,7 +25,8 @@ class Filesystem {
 
 	static int __release(const char* path, struct fuse_file_info* info) noexcept;
 
-	static int __readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t offset, struct fuse_file_info* info, enum fuse_readdir_flags flags) noexcept;
+	static int __readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t offset, struct fuse_file_info* info,
+	                     enum fuse_readdir_flags flags) noexcept;
 
 	static int __create(const char* path, mode_t mode, struct fuse_file_info* info) noexcept;
 
@@ -52,7 +53,8 @@ public:
 
 	virtual int release(const char* path, struct fuse_file_info* info) = 0;
 
-	virtual int readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t offset, struct fuse_file_info* info, enum fuse_readdir_flags flags) = 0;
+	virtual int readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t offset, struct fuse_file_info* info, enum fuse_readdir_flags flags)
+	    = 0;
 
 	virtual int create(const char* path, mode_t mode, struct fuse_file_info* info) = 0;
 };

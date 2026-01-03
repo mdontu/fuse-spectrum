@@ -11,7 +11,8 @@
 
 static void version()
 {
-	std::cout << std::format("Fuse-Spectrum version {}.{}.{}\n", FUSE_SPECTRUM_VERSION_MAJOR, FUSE_SPECTRUM_VERSION_MINOR, FUSE_SPECTRUM_VERSION_PATCH);
+	std::cout << std::format("Fuse-Spectrum version {}.{}.{}\n", FUSE_SPECTRUM_VERSION_MAJOR, FUSE_SPECTRUM_VERSION_MINOR,
+	                         FUSE_SPECTRUM_VERSION_PATCH);
 }
 
 static void help(const char* progname)
@@ -31,6 +32,7 @@ int main(int argc, char* argv[])
 		int version_{};
 	} options;
 
+	// clang-format off
 	static const auto optionSpec = std::to_array<struct fuse_opt>({
 		{"--file=%s"      , offsetof(decltype(options), file_)      , 0},
 		{"--filesystem=%s", offsetof(decltype(options), filesystem_), 0},
@@ -40,6 +42,7 @@ int main(int argc, char* argv[])
 		{"--version"      , offsetof(decltype(options), version_)   , 1},
 		FUSE_OPT_END
 	});
+	// clang-format on
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
@@ -67,7 +70,7 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	int ret = EXIT_SUCCESS;
+	int ret   = EXIT_SUCCESS;
 	auto disk = Disk::create(options.file_);
 
 	if (!disk) {

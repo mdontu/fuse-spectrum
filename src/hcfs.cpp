@@ -19,23 +19,14 @@
 namespace fs = std::filesystem;
 
 const DiskParameterBlock HCFS::dpb_{
-	.spt_ = 32,
-	.bsh_ = 4,
-	.blm_ = 15,
-	.exm_ = 0,
-	.dsm_ = 320,
-	.drm_ = 127,
-	.al0_ = 0xc0,
-	.al1_ = 0,
-	.cks_ = 0,
-	.off_ = 0
-};
+    .spt_ = 32, .bsh_ = 4, .blm_ = 15, .exm_ = 0, .dsm_ = 320, .drm_ = 127, .al0_ = 0xc0, .al1_ = 0, .cks_ = 0, .off_ = 0};
 
 HCFS::HCFS(Disk* disk)
     : disk_{disk}
 {
 	if (interleave640_.size() != disk_->properties().sectors() && interleave320_.size() != disk_->properties().sectors())
-		throw std::runtime_error(std::format("no sector interleave available for the current number of sectors ({})", disk_->properties().sectors()));
+		throw std::runtime_error(
+		    std::format("no sector interleave available for the current number of sectors ({})", disk_->properties().sectors()));
 
 	loadFAT();
 }
@@ -48,7 +39,9 @@ HCFS::~HCFS()
 unsigned int HCFS::ipos(unsigned int pos) const
 {
 	const DiskPos apos(disk_->properties(), pos);
-	const DiskPos bpos(disk_->properties(), apos.track(), apos.head(), interleave640_.size() == disk_->properties().sectors() ? interleave640_.at(apos.sector()) : interleave320_.at(apos.sector()));
+	const DiskPos bpos(disk_->properties(), apos.track(), apos.head(),
+	                   interleave640_.size() == disk_->properties().sectors() ? interleave640_.at(apos.sector())
+	                                                                          : interleave320_.at(apos.sector()));
 
 	return bpos.pos();
 }
@@ -292,7 +285,7 @@ int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* inf
 		if (entry != __path.filename())
 			continue;
 
-		size   += entry.size();
+		size += entry.size();
 		blocks += entry.blocks();
 
 		entries++;
@@ -309,7 +302,7 @@ int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* inf
 
 	if (length < size) {
 		unsigned int n = length / HCFS_BLOCK_SIZE + (length % HCFS_BLOCK_SIZE ? 1 : 0);
-		n = blocks - n;
+		n              = blocks - n;
 
 		for (auto it = fatEntries_.rbegin(); it != fatEntries_.rend(); ++it) {
 			auto& entry = *it;
@@ -362,7 +355,7 @@ int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* inf
 	unsigned int n = length / HCFS_BLOCK_SIZE + (length % HCFS_BLOCK_SIZE ? 1 : 0);
 	n -= blocks;
 
-	bool full = false;
+	bool full             = false;
 	unsigned char extents = 0;
 	for (auto& entry : fatEntries_) {
 		if (!full) {
@@ -445,9 +438,9 @@ int HCFS::read(const char* path, char* buf, size_t size, off_t offset, struct fu
 	if (offset >= totalSize)
 		return 0;
 
-	unsigned int blockPos = offset / HCFS_BLOCK_SIZE;
+	unsigned int blockPos    = offset / HCFS_BLOCK_SIZE;
 	unsigned int blockOffset = offset % HCFS_BLOCK_SIZE;
-	size_t remaining = size;
+	size_t remaining         = size;
 
 	for (const auto& entry : fatEntries_) {
 		if (entry.free())
@@ -466,7 +459,7 @@ int HCFS::read(const char* path, char* buf, size_t size, off_t offset, struct fu
 				readBlock(entry.allocationUnits_.at(blockPos++), __buf);
 
 				unsigned int sz = std::min(remaining, __buf.size() - blockOffset);
-				sz = std::min(sz, totalSize);
+				sz              = std::min(sz, totalSize);
 
 				std::memcpy(buf + size - remaining, __buf.data() + blockOffset, sz);
 
@@ -505,12 +498,12 @@ int HCFS::write(const char* path, const char* buf, size_t size, off_t offset, st
 		auto ret = truncate(path, static_cast<off_t>(offset + size), info);
 		if (ret < 0)
 			return ret;
-		totalSize = ((offset + size) / HCFS_BLOCK_SIZE + ((offset + size) % HCFS_BLOCK_SIZE ? 1 :0)) * HCFS_BLOCK_SIZE;
+		totalSize = ((offset + size) / HCFS_BLOCK_SIZE + ((offset + size) % HCFS_BLOCK_SIZE ? 1 : 0)) * HCFS_BLOCK_SIZE;
 	}
 
-	unsigned int blockPos = offset / HCFS_BLOCK_SIZE;
+	unsigned int blockPos    = offset / HCFS_BLOCK_SIZE;
 	unsigned int blockOffset = offset % HCFS_BLOCK_SIZE;
-	size_t remaining = size;
+	size_t remaining         = size;
 
 	for (const auto& entry : fatEntries_) {
 		if (entry.free())
@@ -529,7 +522,7 @@ int HCFS::write(const char* path, const char* buf, size_t size, off_t offset, st
 				readBlock(entry.allocationUnits_.at(blockPos), __buf);
 
 				unsigned int sz = std::min(remaining, __buf.size() - blockOffset);
-				sz = std::min(sz, totalSize);
+				sz              = std::min(sz, totalSize);
 
 				std::memcpy(__buf.data() + blockOffset, buf + (size - remaining), sz);
 
@@ -593,7 +586,8 @@ int HCFS::release(const char* path, struct fuse_file_info* /* info */)
 	return -ENOENT;
 }
 
-int HCFS::readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t /* offset */, struct fuse_file_info* /* info */, enum fuse_readdir_flags /* flags */)
+int HCFS::readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t /* offset */, struct fuse_file_info* /* info */,
+                  enum fuse_readdir_flags /* flags */)
 {
 	const fs::path __path{path};
 

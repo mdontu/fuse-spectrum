@@ -148,7 +148,8 @@ int Filesystem::__release(const char* path, struct fuse_file_info* info) noexcep
 	return ret;
 }
 
-int Filesystem::__readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t offset, struct fuse_file_info* info, enum fuse_readdir_flags flags) noexcept
+int Filesystem::__readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t offset, struct fuse_file_info* info,
+                          enum fuse_readdir_flags flags) noexcept
 {
 	int ret = -EIO;
 

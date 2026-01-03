@@ -89,11 +89,12 @@ IMD::IMD(const fs::path& path)
 	unsigned int sectorSize = 0;
 
 	for (const auto& track : tracks_) {
-		tracks     = std::max(tracks, static_cast<unsigned int>(track.cylinder_));
-		heads      = std::max(heads, static_cast<unsigned int>(track.head_));
+		tracks = std::max(tracks, static_cast<unsigned int>(track.cylinder_));
+		heads  = std::max(heads, static_cast<unsigned int>(track.head_));
 
 		if (sectors > 0 && sectors != track.nsectors_) {
-			std::cerr << "warning: multiple sector counts per track are not supported (" << sectors << ", " << static_cast<unsigned int>(track.nsectors_) << ")\n";
+			std::cerr << "warning: multiple sector counts per track are not supported (" << sectors << ", "
+			          << static_cast<unsigned int>(track.nsectors_) << ")\n";
 			const auto n0 = std::count_if(tracks_.begin(), tracks_.end(), [n = sectors](const auto& track) {
 				return n == track.nsectors_;
 			});
@@ -189,6 +190,7 @@ void IMD::save(const fs::path& path) const
 	if (!of)
 		throw std::runtime_error(std::format("failed to write {}", path.string()));
 
+	// clang-format off
 	of << "IMD 1.17: "
 	   << std::setw(2) << std::setfill('0') << __tm->tm_mon << "/"
 	   << std::setw(2) << std::setfill('0') << __tm->tm_mday << "/"
@@ -197,6 +199,7 @@ void IMD::save(const fs::path& path) const
 	   << std::setw(2) << std::setfill('0') << __tm->tm_min << ":"
 	   << std::setw(2) << std::setfill('0') << __tm->tm_sec << "\r\n"
 	   << std::format("fsp {}.{}.{}\x1a", FUSE_SPECTRUM_VERSION_MAJOR, FUSE_SPECTRUM_VERSION_MINOR, FUSE_SPECTRUM_VERSION_PATCH);
+	// clang-format on
 
 	for (const auto& track : tracks_) {
 		of.write(reinterpret_cast<const char*>(&track.mode_), sizeof(track.mode_));
@@ -234,7 +237,8 @@ void IMD::save(const fs::path& path) const
 				} else {
 					const unsigned char hdr = 1;
 					of.write(reinterpret_cast<const char*>(&hdr), sizeof(hdr));
-					of.write(reinterpret_cast<const char*>(sector.data().data()), static_cast<std::streamsize>(sector.data().size()));
+					of.write(reinterpret_cast<const char*>(sector.data().data()),
+					         static_cast<std::streamsize>(sector.data().size()));
 				}
 			}
 		}

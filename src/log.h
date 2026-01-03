@@ -9,7 +9,8 @@ void hexdump(const void* buf, size_t size)
 	constexpr auto LINE_LENGTH = 32u;
 
 	for (unsigned int i = 0; i < size; i++) {
-		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(static_cast<const unsigned char*>(buf)[i]) << " ";
+		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(static_cast<const unsigned char*>(buf)[i])
+		          << " ";
 		if (((i + 1) % LINE_LENGTH) == 0) {
 			std::cout << " ";
 			for (unsigned int j = i + 1 - LINE_LENGTH; j <= i; j++) {

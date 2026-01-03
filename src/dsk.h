@@ -10,7 +10,7 @@
 
 namespace fs = std::filesystem;
 
-class DSK final: public Disk {
+class DSK final : public Disk {
 	struct SectorInfo {
 		unsigned char track_{};
 		unsigned char side_{};
@@ -37,8 +37,12 @@ class DSK final: public Disk {
 	std::vector<unsigned char> trackSizes_;
 	std::vector<Track> tracks_;
 	std::map<unsigned int, Sector*> sectors_;
-	inline static const auto stag = std::to_array({'M', 'V', ' ', '-', ' ', 'C', 'P', 'C', 'E', 'M', 'U', ' ', 'D', 'i', 's', 'k', '-', 'F', 'i', 'l', 'e', '\r', '\n', 'D', 'i', 's', 'k', '-', 'I', 'n', 'f', 'o', '\r', '\n'}); // standard
-	inline static const auto etag = std::to_array({'E', 'X', 'T', 'E', 'N', 'D', 'E', 'D', ' ', 'C', 'P', 'C', ' ', 'D', 'S', 'K', ' ', 'F', 'i', 'l', 'e', '\r', '\n', 'D', 'i', 's', 'k', '-', 'I', 'n', 'f', 'o', '\r', '\n'}); // extended
+	inline static const auto stag
+	    = std::to_array({'M', 'V', ' ', '-', ' ',  'C',  'P', 'C', 'E', 'M', 'U', ' ', 'D', 'i', 's', 'k',  '-',
+	                     'F', 'i', 'l', 'e', '\r', '\n', 'D', 'i', 's', 'k', '-', 'I', 'n', 'f', 'o', '\r', '\n'}); // standard
+	inline static const auto etag
+	    = std::to_array({'E', 'X', 'T', 'E', 'N',  'D',  'E', 'D', ' ', 'C', 'P', 'C', ' ', 'D', 'S', 'K',  ' ',
+	                     'F', 'i', 'l', 'e', '\r', '\n', 'D', 'i', 's', 'k', '-', 'I', 'n', 'f', 'o', '\r', '\n'}); // extended
 	inline static const auto trackTag = std::to_array({'T', 'r', 'a', 'c', 'k', '-', 'I', 'n', 'f', 'o', '\r', '\n'});
 	bool extended_{};
 

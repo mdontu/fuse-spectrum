@@ -10,6 +10,7 @@
 
 namespace fs = std::filesystem;
 
+// clang-format off
 enum class DataTransferRate : unsigned char {
 	DTR_500_FM  = 0,
 	DTR_300_FM  = 1,
@@ -30,8 +31,9 @@ enum class SectorSize : unsigned char {
 	SS_8192    = 6,
 	SS_INVALID = 255
 };
+// clang-format on
 
-class IMD final: public Disk {
+class IMD final : public Disk {
 	struct Track {
 		DataTransferRate mode_{DataTransferRate::DTR_INVALID};
 		unsigned char cylinder_{};
