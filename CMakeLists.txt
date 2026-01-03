@@ -44,7 +44,14 @@ include(GNUInstallDirs)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(FUSE REQUIRED fuse3)
 
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/version.h
+	@ONLY
+)
+
 add_executable(fuse-spectrum src/disk.cpp src/filesystem.cpp src/hcfs.cpp src/dsk.cpp src/imd.cpp src/main.cpp)
+target_include_directories(fuse-spectrum PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(fuse-spectrum PRIVATE FUSE_USE_VERSION=30)
 target_link_libraries(fuse-spectrum PRIVATE common_exe_flags ${FUSE_LIBRARIES} Threads::Threads)
 
