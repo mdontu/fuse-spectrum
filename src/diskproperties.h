@@ -16,7 +16,7 @@ class DiskProperties {
 public:
 	DiskProperties() = default;
 
-	DiskProperties(unsigned int tracks, unsigned heads, unsigned int sectors, unsigned int sectorSize)
+	DiskProperties(unsigned int tracks, unsigned int heads, unsigned int sectors, unsigned int sectorSize)
 	    : tracks_{tracks}
 	    , heads_{heads}
 	    , sectors_{sectors}

@@ -24,8 +24,7 @@ sudo fuse-spectrum --file=<disk-image> -o allow_other,uid=$(id -u),gid=$(id -g) 
 ```shell
 cmake -DCMAKE_BUILD_TYPE=Release -B build
 cmake --build build -v
-cmake --install build -v
-
+sudo cmake --install build -v
 ```
 
 ### Debug
@@ -33,7 +32,7 @@ cmake --install build -v
 ```shell
 cmake -DCMAKE_BUILD_TYPE=Debug -B build
 cmake --build build -v
-cmake --install build -v
+sudo cmake --install build -v
 ```
 
 ## Supported disk images
