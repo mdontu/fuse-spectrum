@@ -5,7 +5,7 @@ endif()
 
 cmake_minimum_required(VERSION 3.19)
 
-project(fuse-spectrum VERSION 1.0.0 LANGUAGES CXX)
+project(fuse-spectrum VERSION 1.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
