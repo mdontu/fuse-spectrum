@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
 
 	if (std::string_view(options.filesystem_) == "hc") {
 		HCFS fs(disk.get());
-		ret = fs.main(args.argc, args.argv);
+		ret = fs.main(std::span(args.argv, args.argc));
 	} else {
 		std::cerr << "Error: unsupported filesystem \"" << options.filesystem_ << "\"\n";
 		return EXIT_FAILURE;

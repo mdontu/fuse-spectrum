@@ -234,7 +234,7 @@ void IMD::save(const fs::path& path) const
 				} else {
 					const unsigned char hdr = 1;
 					of.write(reinterpret_cast<const char*>(&hdr), sizeof(hdr));
-					of.write(reinterpret_cast<const char*>(sector.data().data()), sector.data().size());
+					of.write(reinterpret_cast<const char*>(sector.data().data()), static_cast<std::streamsize>(sector.data().size()));
 				}
 			}
 		}

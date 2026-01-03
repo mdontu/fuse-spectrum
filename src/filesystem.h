@@ -2,6 +2,7 @@
 #pragma once
 
 #include <shared_mutex>
+#include <span>
 #include <fuse3/fuse.h>
 
 class Filesystem {
@@ -33,7 +34,7 @@ public:
 
 	virtual ~Filesystem() = default;
 
-	int main(int argc, char* argv[]);
+	int main(std::span<char*> args);
 
 	virtual int getattr(const char* path, struct stat* buf, struct fuse_file_info* info) = 0;
 

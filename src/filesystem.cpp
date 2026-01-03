@@ -180,7 +180,7 @@ int Filesystem::__create(const char* path, mode_t mode, struct fuse_file_info* i
 	return ret;
 }
 
-int Filesystem::main(int argc, char* argv[])
+int Filesystem::main(std::span<char*> args)
 {
-	return fuse_main(argc, argv, &ops_, this);
+	return fuse_main(args.size(), args.data(), &ops_, this);
 }

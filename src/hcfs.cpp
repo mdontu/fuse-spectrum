@@ -479,7 +479,7 @@ int HCFS::read(const char* path, char* buf, size_t size, off_t offset, struct fu
 		}
 	}
 
-	return (size - remaining);
+	return static_cast<int>(size - remaining);
 }
 
 int HCFS::write(const char* path, const char* buf, size_t size, off_t offset, struct fuse_file_info* info)
@@ -502,7 +502,7 @@ int HCFS::write(const char* path, const char* buf, size_t size, off_t offset, st
 	}
 
 	if (offset + size > totalSize) {
-		auto ret = truncate(path, offset + size, info);
+		auto ret = truncate(path, static_cast<off_t>(offset + size), info);
 		if (ret < 0)
 			return ret;
 		totalSize = ((offset + size) / HCFS_BLOCK_SIZE + ((offset + size) % HCFS_BLOCK_SIZE ? 1 :0)) * HCFS_BLOCK_SIZE;
@@ -544,7 +544,7 @@ int HCFS::write(const char* path, const char* buf, size_t size, off_t offset, st
 		}
 	}
 
-	return (size - remaining);
+	return static_cast<int>(size - remaining);
 }
 
 int HCFS::statfs(const char* path, struct statvfs* buf)

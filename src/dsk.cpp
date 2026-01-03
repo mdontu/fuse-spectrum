@@ -272,7 +272,7 @@ void DSK::save(const fs::path& path) const
 		of.write(stag.data(), stag.size());
 
 	std::array<char, 14> creator{};
-	std::snprintf(creator.data(), creator.size(), "fsp %u.%u.%u", FUSE_SPECTRUM_VERSION_MAJOR, FUSE_SPECTRUM_VERSION_MINOR, FUSE_SPECTRUM_VERSION_PATCH);
+	std::format_to_n(creator.begin(), creator.size(), "fsp {}.{}.{}", FUSE_SPECTRUM_VERSION_MAJOR, FUSE_SPECTRUM_VERSION_MINOR, FUSE_SPECTRUM_VERSION_PATCH);
 	of.write(creator.data(),  creator.size());
 
 	unsigned char tracks = properties_.tracks();
