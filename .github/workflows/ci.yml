@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install required packages
-      run: sudo apt-get update && sudo apt-get install -y cmake g++ libfuse3-dev pkg-config
+      run: sudo apt-get update && sudo apt-get install -y cmake libfuse3-dev
     - uses: actions/checkout@v4
     - name: Configure
       run: cmake -DCMAKE_BUILD_TYPE=Debug -B build
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install required packages
-      run: sudo apt-get update && sudo apt-get install -y cmake g++ libfuse3-dev pkg-config
+      run: sudo apt-get update && sudo apt-get install -y cmake libfuse3-dev
     - uses: actions/checkout@v4
     - name: Configure
       run: cmake -DCMAKE_BUILD_TYPE=Release -B build
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: Install required packages
-      run: sudo apt-get update && sudo apt-get install -y cmake g++ libfuse3-dev pkg-config
+      run: sudo apt-get update && sudo apt-get install -y cmake libfuse3-dev
     - uses: actions/checkout@v4
     - name: Configure
       run: cmake -DCMAKE_BUILD_TYPE=Debug -B build
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: Install required packages
-      run: sudo apt-get update && sudo apt-get install -y cmake g++ libfuse3-dev pkg-config
+      run: sudo apt-get update && sudo apt-get install -y cmake libfuse3-dev
     - uses: actions/checkout@v4
     - name: Configure
       run: cmake -DCMAKE_BUILD_TYPE=Release -B build
