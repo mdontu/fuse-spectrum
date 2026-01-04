@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0
 #pragma once
 
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <functional>
+#include <optional>
+#include <string>
+
 #include "disk.h"
 #include "filesystem.h"
 
