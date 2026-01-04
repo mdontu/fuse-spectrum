@@ -102,6 +102,7 @@ class HCFS final : public Filesystem {
 	static constexpr auto interleave320_ = std::to_array<unsigned char>({0, 2, 4, 6, 8, 1, 3, 5, 7});
 
 	// BASIC 3.5" format
+	// clang-format off
 	inline static const DiskParameterBlock dpb_ = {
 		.spt_ = 32,
 		.bsh_ = 4,
@@ -114,6 +115,7 @@ class HCFS final : public Filesystem {
 		.cks_ = 0,
 		.off_ = 0
 	};
+	// clang-format on
 
 	std::vector<FATEntry> fatEntries_;
 

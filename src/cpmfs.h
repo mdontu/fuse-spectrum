@@ -101,8 +101,20 @@ class CPMFS final : public Filesystem {
 	static constexpr auto interleave_ = std::to_array<unsigned char>({0, 2, 4, 6, 8, 1, 3, 5, 7});
 
 	// CP/M 2.2 3.5" format
-	inline static const DiskParameterBlock dpb_
-	    = {.spt_ = 32, .bsh_ = 4, .blm_ = 15, .exm_ = 0, .dsm_ = 341, .drm_ = 127, .al0_ = 0xc0, .al1_ = 0, .cks_ = 0, .off_ = 2};
+	// clang-format off
+	inline static const DiskParameterBlock dpb_ = {
+		.spt_ = 32,
+		.bsh_ = 4,
+		.blm_ = 15,
+		.exm_ = 0,
+		.dsm_ = 341,
+		.drm_ = 127,
+		.al0_ = 0xc0,
+		.al1_ = 0,
+		.cks_ = 0,
+		.off_ = 2
+	};
+	// clang-format on
 
 	std::vector<FATEntry> fatEntries_;
 

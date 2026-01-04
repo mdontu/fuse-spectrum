@@ -151,8 +151,8 @@ DSK::DSK(const fs::path& path)
 				for (unsigned char j = 0; j < track.sectorCount_; j++) {
 					SectorInfo info;
 
-					info.track_      = Disk::read8(in);
-					info.side_       = Disk::read8(in);
+					info.track_ = Disk::read8(in);
+					info.side_  = Disk::read8(in);
 
 					info.id_ = Disk::read8(in);
 					if (info.id_ >= 0x41 && info.id_ <= 0x7f)
