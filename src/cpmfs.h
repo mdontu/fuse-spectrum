@@ -1,36 +1,29 @@
 // SPDX-License-Identifier: GPL-2.0
 #pragma once
 
-#include <algorithm>
-#include <array>
-#include <cctype>
-#include <functional>
-#include <optional>
-#include <string>
-
 #include "disk.h"
 #include "filesystem.h"
 
-class HCFS final : public Filesystem {
-	static constexpr auto HCFS_RECORD_SIZE          = 128u;
-	static constexpr auto HCFS_BLOCK_SIZE           = 2048u;
-	static constexpr unsigned char HCFS_FREE_BYTE   = 0xe5;
-	static constexpr auto HCFS_FILENAME_MAXSIZE     = 11u;
-	static constexpr auto HCFS_MAX_ALLOCATION_UNITS = 8u;
+class CPMFS final : public Filesystem {
+	static constexpr auto CPMFS_RECORD_SIZE          = 128u;
+	static constexpr auto CPMFS_BLOCK_SIZE           = 2048u;
+	static constexpr unsigned char CPMFS_FREE_BYTE   = 0xe5;
+	static constexpr auto CPMFS_FILENAME_MAXSIZE     = 11u;
+	static constexpr auto CPMFS_MAX_ALLOCATION_UNITS = 8u;
 
 #pragma pack(push, 1)
 	struct FATEntry {
 		unsigned char userCode_{};
-		std::array<char, HCFS_FILENAME_MAXSIZE> name_{};
+		std::array<char, CPMFS_FILENAME_MAXSIZE> name_{};
 		unsigned char exLo_{};
 		unsigned char reserved_{};
 		unsigned char exHi_{};
 		unsigned char recordCount_{};
-		std::array<unsigned short, HCFS_MAX_ALLOCATION_UNITS> allocationUnits_{};
+		std::array<unsigned short, CPMFS_MAX_ALLOCATION_UNITS> allocationUnits_{};
 
 		void clear()
 		{
-			userCode_ = HCFS_FREE_BYTE;
+			userCode_ = CPMFS_FREE_BYTE;
 
 			name_.fill(' ');
 
@@ -44,7 +37,7 @@ class HCFS final : public Filesystem {
 
 		bool free() const
 		{
-			return (userCode_ == HCFS_FREE_BYTE);
+			return (userCode_ == CPMFS_FREE_BYTE);
 		}
 
 		bool extent() const
@@ -54,7 +47,7 @@ class HCFS final : public Filesystem {
 
 		bool full() const
 		{
-			return (recordCount_ >= (std::size(allocationUnits_) * HCFS_BLOCK_SIZE / 128));
+			return (recordCount_ >= (std::size(allocationUnits_) * CPMFS_BLOCK_SIZE / 128));
 		}
 
 		std::string name() const
@@ -98,26 +91,17 @@ class HCFS final : public Filesystem {
 	};
 #pragma pack(pop)
 
-	static constexpr auto interleave640_ = std::to_array<unsigned char>({0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15});
-	static constexpr auto interleave320_ = std::to_array<unsigned char>({0, 2, 4, 6, 8, 1, 3, 5, 7});
+	static constexpr auto interleave_ = std::to_array<unsigned char>({0, 2, 4, 6, 8, 1, 3, 5, 7});
 
-	// BASIC 3.5" format
-	inline static const DiskParameterBlock dpb_ = {
-		.spt_ = 32,
-		.bsh_ = 4,
-		.blm_ = 15,
-		.exm_ = 0,
-		.dsm_ = 320,
-		.drm_ = 127,
-		.al0_ = 0xc0,
-		.al1_ = 0,
-		.cks_ = 0,
-		.off_ = 0
-	};
+	// CP/M 2.2 3.5" format
+	inline static const DiskParameterBlock dpb_
+	    = {.spt_ = 32, .bsh_ = 4, .blm_ = 15, .exm_ = 0, .dsm_ = 341, .drm_ = 127, .al0_ = 0xc0, .al1_ = 0, .cks_ = 0, .off_ = 2};
 
 	std::vector<FATEntry> fatEntries_;
 
 	Disk* disk_{};
+
+	const unsigned int firstBlock_{};
 
 	unsigned int ipos(unsigned int pos) const;
 
@@ -132,9 +116,9 @@ class HCFS final : public Filesystem {
 	std::optional<std::reference_wrapper<FATEntry>> find(const std::string& path);
 
 public:
-	HCFS(Disk* disk);
+	CPMFS(Disk* disk);
 
-	~HCFS() override;
+	~CPMFS() override;
 
 	int getattr(const char* path, struct stat* buf, struct fuse_file_info* info) override;
 

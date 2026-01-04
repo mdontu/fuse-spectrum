@@ -36,72 +36,74 @@ DSK::DSK(const fs::path& path)
 
 		tracks_.reserve(tracks);
 
-		for (unsigned char i = 0; i < tracks; i++) {
-			std::array<char, trackTag.size()> tag{};
-			const auto trackPos = in.tellg();
+		for (unsigned char t = 0; t < tracks; t++) {
+			for (unsigned char s = 0; s < sides; s++) {
+				std::array<char, trackTag.size()> tag{};
+				const auto trackPos = in.tellg();
 
-			in.read(tag.data(), tag.size());
-			if (!in || !std::equal(trackTag.begin(), trackTag.end(), tag.begin()))
-				throw std::runtime_error("unexpected track tag");
+				in.read(tag.data(), tag.size());
+				if (!in || !std::equal(trackTag.begin(), trackTag.end(), tag.begin()))
+					throw std::runtime_error("unexpected track tag");
 
-			// Jump over unused bytes
-			in.seekg(4, std::ios_base::cur);
+				// Jump over unused bytes
+				in.seekg(4, std::ios_base::cur);
 
-			Track track;
+				Track track;
 
-			track.track_ = Disk::read8(in);
-			track.side_  = Disk::read8(in);
-
-			// Jump over unused bytes
-			in.seekg(2, std::ios_base::cur);
-
-			track.sectorSize_  = Disk::read8(in);
-			track.sectorCount_ = Disk::read8(in);
-			track.gap_         = Disk::read8(in);
-			track.filler_      = Disk::read8(in);
-
-			track.sectorInfos_.reserve(track.sectorCount_);
-
-			for (unsigned char j = 0; j < track.sectorCount_; j++) {
-				SectorInfo info;
-
-				info.track_ = Disk::read8(in);
-				info.side_  = Disk::read8(in);
-
-				info.id_ = Disk::read8(in);
-				if (info.id_ >= 0x41 && info.id_ <= 0x7f)
-					// Amstrad CPC system disk
-					info.id_ -= 0x40;
-				else if (info.id_ >= 0xc1 && info.id_ <= 0xc9)
-					// Amstrad CPC data disk
-					info.id_ -= 0xc0;
-
-				info.size_  = Disk::read8(in);
-				info.sreg1_ = Disk::read8(in);
-				info.sreg2_ = Disk::read8(in);
+				track.track_ = Disk::read8(in);
+				track.side_  = Disk::read8(in);
 
 				// Jump over unused bytes
 				in.seekg(2, std::ios_base::cur);
 
-				track.sectorInfos_.push_back(info);
+				track.sectorSize_  = Disk::read8(in);
+				track.sectorCount_ = Disk::read8(in);
+				track.gap_         = Disk::read8(in);
+				track.filler_      = Disk::read8(in);
+
+				track.sectorInfos_.reserve(track.sectorCount_);
+
+				for (unsigned char j = 0; j < track.sectorCount_; j++) {
+					SectorInfo info;
+
+					info.track_ = Disk::read8(in);
+					info.side_  = Disk::read8(in);
+
+					info.id_ = Disk::read8(in);
+					if (info.id_ >= 0x41 && info.id_ <= 0x7f)
+						// Amstrad CPC system disk
+						info.id_ -= 0x40;
+					else if (info.id_ >= 0xc1 && info.id_ <= 0xc9)
+						// Amstrad CPC data disk
+						info.id_ -= 0xc0;
+
+					info.size_  = Disk::read8(in);
+					info.sreg1_ = Disk::read8(in);
+					info.sreg2_ = Disk::read8(in);
+
+					// Jump over unused bytes
+					in.seekg(2, std::ios_base::cur);
+
+					track.sectorInfos_.push_back(info);
+				}
+
+				// Jump to the first sector data
+				in.seekg(trackPos + DATA_ALIGNMENT, std::ios_base::beg);
+
+				track.sectors_.reserve(track.sectorInfos_.size());
+
+				for (const auto& info : track.sectorInfos_) {
+					std::vector<unsigned char> data(info.size_ * SECTOR_SIZE_UNIT);
+
+					in.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size()));
+
+					Sector sector(std::move(data));
+
+					track.sectors_.push_back(std::move(sector));
+				}
+
+				tracks_.push_back(std::move(track));
 			}
-
-			// Jump to the first sector data
-			in.seekg(trackPos + DATA_ALIGNMENT, std::ios_base::beg);
-
-			track.sectors_.reserve(track.sectorInfos_.size());
-
-			for (const auto& info : track.sectorInfos_) {
-				std::vector<unsigned char> data(info.size_ * SECTOR_SIZE_UNIT);
-
-				in.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size()));
-
-				Sector sector(std::move(data));
-
-				track.sectors_.push_back(std::move(sector));
-			}
-
-			tracks_.push_back(std::move(track));
 		}
 	} else if (std::equal(etag.begin(), etag.end(), buf.begin())) {
 		extended_ = true;

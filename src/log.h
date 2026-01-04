@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <iostream>
 
-void hexdump(const void* buf, size_t size)
+static inline void hexdump(const void* buf, size_t size)
 {
 	constexpr auto LINE_LENGTH = 32u;
 

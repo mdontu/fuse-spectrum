@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string_view>
 
+#include "cpmfs.h"
 #include "disk.h"
 #include "hcfs.h"
 #include "version.h"
@@ -83,13 +84,19 @@ int main(int argc, char* argv[])
 		options.filesystem_   = defaultFs.data();
 	}
 
-	if (std::string_view(options.filesystem_) == "hc") {
-		HCFS fs(disk.get());
-		ret = fs.main(std::span(args.argv, args.argc));
-	} else {
+	std::unique_ptr<Filesystem> fs;
+
+	if (std::string_view(options.filesystem_) == "cpm")
+		fs = std::make_unique<CPMFS>(disk.get());
+	else if (std::string_view(options.filesystem_) == "hc")
+		fs = std::make_unique<HCFS>(disk.get());
+	else {
 		std::cerr << "Error: unsupported filesystem \"" << options.filesystem_ << "\"\n";
 		return EXIT_FAILURE;
 	}
+
+	ret = fs->main(std::span(args.argv, args.argc));
+	fs.reset();
 
 	if (disk->modified())
 		disk->save(options.file_);

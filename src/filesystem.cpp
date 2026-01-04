@@ -185,3 +185,11 @@ int Filesystem::main(std::span<char*> args)
 {
 	return fuse_main(args.size(), args.data(), &ops_, this);
 }
+
+void Filesystem::dumpFAT() const
+{
+}
+
+void Filesystem::printFAT() const
+{
+}

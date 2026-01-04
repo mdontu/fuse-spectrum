@@ -12,6 +12,20 @@
 
 namespace fs = std::filesystem;
 
+// https://www.seasip.info/Cpm/format22.html
+struct DiskParameterBlock {
+	unsigned short spt_{}; // number of 128-byte records per track
+	unsigned char bsh_{};  // block shift; 3 => 1k, 4 => 2k, 5 => 4k ...
+	unsigned char blm_{};  // block mask; 7 => 1k, 0fh => 2k, 1Fh => 4k ...
+	unsigned char exm_{};  // extent mask
+	unsigned short dsm_{}; // (no. of blocks on the disc) - 1
+	unsigned short drm_{}; // (no. of directory entries) - 1
+	unsigned char al0_{};  // directory allocation bitmap, first byte
+	unsigned char al1_{};  // directory allocation bitmap, second byte
+	unsigned short cks_{}; // checksum vector size, 0 for a fixed disc; no. directory entries / 4, rounded up
+	unsigned short off_{}; // offset, number of reserved tracks
+};
+
 class Disk {
 public:
 	Disk() = default;

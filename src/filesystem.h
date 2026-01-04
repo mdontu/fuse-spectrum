@@ -57,4 +57,8 @@ public:
 	    = 0;
 
 	virtual int create(const char* path, mode_t mode, struct fuse_file_info* info) = 0;
+
+	virtual void dumpFAT() const;
+
+	virtual void printFAT() const;
 };

@@ -43,6 +43,7 @@ sudo cmake --install build -v
 ## Supported filesystems
 
 * HC (CP/M 2.2 variation w/o boot tracks)
+* CP/M 2.2 (3.5" - 720K)
 
 ## Tested on the following ZX Spectrum compatible hardware
 

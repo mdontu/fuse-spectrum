@@ -1,55 +1,26 @@
 // SPDX-License-Identifier: GPL-2.0
-#include <array>
 #include <cstring>
-#include <filesystem>
-#include <format>
-#include <fstream>
 #include <iostream>
-#include <stdexcept>
-#include <string_view>
-#include <vector>
 
-#include <sys/stat.h>
-#include <sys/vfs.h>
-
+#include "cpmfs.h"
 #include "diskpos.h"
-#include "hcfs.h"
 #include "log.h"
 
-namespace fs = std::filesystem;
-
-HCFS::HCFS(Disk* disk)
-    : disk_{disk}
-{
-	if (interleave640_.size() != disk_->properties().sectors() && interleave320_.size() != disk_->properties().sectors())
-		throw std::runtime_error(
-		    std::format("no sector interleave available for the current number of sectors ({})", disk_->properties().sectors()));
-
-	loadFAT();
-}
-
-HCFS::~HCFS()
-{
-	saveFAT();
-}
-
-unsigned int HCFS::ipos(unsigned int pos) const
+unsigned int CPMFS::ipos(unsigned int pos) const
 {
 	const DiskPos apos(disk_->properties(), pos);
-	const DiskPos bpos(disk_->properties(), apos.track(), apos.head(),
-	                   interleave640_.size() == disk_->properties().sectors() ? interleave640_.at(apos.sector())
-	                                                                          : interleave320_.at(apos.sector()));
+	const DiskPos bpos(disk_->properties(), apos.track(), apos.head(), interleave_.at(apos.sector()));
 
 	return bpos.pos();
 }
 
-void HCFS::readBlock(unsigned int block, std::vector<unsigned char>& buf) const
+void CPMFS::readBlock(unsigned int block, std::vector<unsigned char>& buf) const
 {
 	buf.clear();
-	buf.reserve(HCFS_BLOCK_SIZE);
+	buf.reserve(CPMFS_BLOCK_SIZE);
 
-	const auto start = block * HCFS_BLOCK_SIZE / disk_->properties().sectorSize();
-	for (unsigned int i = start; i < (start + HCFS_BLOCK_SIZE / disk_->properties().sectorSize()); i++) {
+	const auto start = (firstBlock_ + block) * CPMFS_BLOCK_SIZE / disk_->properties().sectorSize();
+	for (unsigned int i = start; i < (start + CPMFS_BLOCK_SIZE / disk_->properties().sectorSize()); i++) {
 		auto& sector = disk_->read(ipos(i));
 
 		if (sector.data().empty())
@@ -59,14 +30,14 @@ void HCFS::readBlock(unsigned int block, std::vector<unsigned char>& buf) const
 	}
 }
 
-void HCFS::writeBlock(unsigned int block, const std::vector<unsigned char>& buf) const
+void CPMFS::writeBlock(unsigned int block, const std::vector<unsigned char>& buf) const
 {
 	unsigned int nsect = 0;
 	std::vector<unsigned char> __buf;
 
 	__buf.reserve(disk_->properties().sectorSize());
 
-	const auto start = block * HCFS_BLOCK_SIZE / disk_->properties().sectorSize();
+	const auto start = (firstBlock_ + block) * CPMFS_BLOCK_SIZE / disk_->properties().sectorSize();
 	for (const auto b : buf) {
 		__buf.insert(__buf.end(), b);
 		if (__buf.size() == disk_->properties().sectorSize()) {
@@ -88,32 +59,31 @@ void HCFS::writeBlock(unsigned int block, const std::vector<unsigned char>& buf)
 	}
 }
 
-void HCFS::loadFAT()
+void CPMFS::loadFAT()
 {
 	fatEntries_.clear();
-	fatEntries_.reserve(2 * HCFS_BLOCK_SIZE / sizeof(fatEntries_.front()));
+	fatEntries_.reserve(2 * CPMFS_BLOCK_SIZE / sizeof(fatEntries_.front()));
 
 	std::vector<unsigned char> buf;
 
-	const unsigned int start = dpb_.off_ * disk_->properties().sectorsPerTrack() * disk_->properties().sectorSize() / HCFS_BLOCK_SIZE;
-	readBlock(start, buf);
+	readBlock(0, buf);
 
 	for (unsigned int i = 0; i < (buf.size() / sizeof(fatEntries_.front())); i++)
 		fatEntries_.push_back(reinterpret_cast<decltype(&fatEntries_.front())>(buf.data())[i]);
 
-	readBlock(start + 1, buf);
+	readBlock(1, buf);
 
 	for (unsigned int i = 0; i < (buf.size() / sizeof(fatEntries_.front())); i++)
 		fatEntries_.push_back(reinterpret_cast<decltype(&fatEntries_.front())>(buf.data())[i]);
 }
 
-void HCFS::saveFAT() const
+void CPMFS::saveFAT() const
 {
 	if (!disk_->modified())
 		return;
 
 	// initialize all free blocks
-	std::vector<bool> freeBlocks(disk_->properties().size() / HCFS_BLOCK_SIZE, true);
+	std::vector<bool> freeBlocks(disk_->properties().size() / CPMFS_BLOCK_SIZE - firstBlock_, true);
 
 	freeBlocks.at(0) = false;
 	freeBlocks.at(1) = false;
@@ -129,7 +99,7 @@ void HCFS::saveFAT() const
 	unsigned int block = 0;
 	for (const auto& fb : freeBlocks) {
 		if (fb) {
-			static const std::vector<unsigned char> buf(HCFS_BLOCK_SIZE, HCFS_FREE_BYTE);
+			static const std::vector<unsigned char> buf(CPMFS_BLOCK_SIZE, CPMFS_FREE_BYTE);
 			writeBlock(block, buf);
 		}
 		block++;
@@ -143,15 +113,15 @@ void HCFS::saveFAT() const
 	for (const auto& entry : fatEntries_)
 		buf.insert(buf.end(), reinterpret_cast<const unsigned char*>(&entry), reinterpret_cast<const unsigned char*>(&entry) + sizeof(entry));
 
-	for (unsigned int i = 0; i < (buf.size() / HCFS_BLOCK_SIZE); i++)
-		writeBlock(i, {buf.data() + i * HCFS_BLOCK_SIZE, buf.data() + i * HCFS_BLOCK_SIZE + HCFS_BLOCK_SIZE});
+	for (unsigned int i = 0; i < (buf.size() / CPMFS_BLOCK_SIZE); i++)
+		writeBlock(i, {buf.data() + i * CPMFS_BLOCK_SIZE, buf.data() + i * CPMFS_BLOCK_SIZE + CPMFS_BLOCK_SIZE});
 
-	auto r = buf.size() % HCFS_BLOCK_SIZE;
+	auto r = buf.size() % CPMFS_BLOCK_SIZE;
 	if (r)
-		writeBlock(buf.size() / HCFS_BLOCK_SIZE + 1, {buf.data() + buf.size() - r, buf.data() + buf.size()});
+		writeBlock(buf.size() / CPMFS_BLOCK_SIZE + 1, {buf.data() + buf.size() - r, buf.data() + buf.size()});
 }
 
-std::optional<std::reference_wrapper<HCFS::FATEntry>> HCFS::find(const std::string& path)
+std::optional<std::reference_wrapper<CPMFS::FATEntry>> CPMFS::find(const std::string& path)
 {
 	const auto it = std::find_if(fatEntries_.begin(), fatEntries_.end(), [&path](const auto& entry) {
 		return !entry.free() && !entry.extent() && entry == path;
@@ -163,38 +133,23 @@ std::optional<std::reference_wrapper<HCFS::FATEntry>> HCFS::find(const std::stri
 	return {};
 }
 
-void HCFS::printFAT() const
+CPMFS::CPMFS(Disk* disk)
+    : disk_{disk}
+    , firstBlock_{dpb_.off_ * disk->properties().sectorsPerTrack() * disk->properties().sectorSize() / CPMFS_BLOCK_SIZE}
 {
-	unsigned int n = 0;
+	if (interleave_.size() != disk_->properties().sectors())
+		throw std::runtime_error(
+		    std::format("no sector interleave available for the current number of sectors ({})", disk_->properties().sectors()));
 
-	for (const auto& entry : fatEntries_) {
-		if (!entry.free()) {
-			std::cout << "entry: " << n++ << "\n";
-			std::cout << "\tname: \"" << entry.name() << "\"";
-
-			if (entry.name_.at(entry.name_.size() - 3) & 0x80)
-				std::cout << " (read-only)";
-
-			if (entry.name_.at(entry.name_.size() - 2) & 0x80)
-				std::cout << " (hidden)";
-
-			if (entry.extent())
-				std::cout << " (extent)";
-
-			std::cout << "\n";
-
-			std::cout << "\trecord count: " << static_cast<unsigned int>(entry.recordCount_) << "\n";
-			std::cout << "\tallocation units: ";
-
-			for (const auto unit : entry.allocationUnits_)
-				std::cout << std::hex << std::setw(4) << std::setfill('0') << unit << " ";
-
-			std::cout << std::dec << "\n";
-		}
-	}
+	loadFAT();
 }
 
-int HCFS::getattr(const char* path, struct stat* buf, struct fuse_file_info* /* info */)
+CPMFS::~CPMFS()
+{
+	saveFAT();
+}
+
+int CPMFS::getattr(const char* path, struct stat* buf, struct fuse_file_info* /* info */)
 {
 	const fs::path __path{path};
 
@@ -211,7 +166,7 @@ int HCFS::getattr(const char* path, struct stat* buf, struct fuse_file_info* /* 
 		buf->st_nlink   = 1;
 		buf->st_size    = n * 2;
 		buf->st_blksize = disk_->properties().sectorSize();
-		buf->st_blocks  = HCFS_BLOCK_SIZE * 2 / 512;
+		buf->st_blocks  = CPMFS_BLOCK_SIZE * 2 / 512;
 
 		return 0;
 	}
@@ -247,7 +202,7 @@ int HCFS::getattr(const char* path, struct stat* buf, struct fuse_file_info* /* 
 	return err;
 }
 
-int HCFS::unlink(const char* path)
+int CPMFS::unlink(const char* path)
 {
 	const fs::path __path{path};
 
@@ -264,7 +219,7 @@ int HCFS::unlink(const char* path)
 	return 0;
 }
 
-int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* info */)
+int CPMFS::truncate(const char* path, off_t length, struct fuse_file_info* /* info */)
 {
 	const fs::path __path{path};
 
@@ -298,7 +253,7 @@ int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* inf
 		return 0;
 
 	if (length < size) {
-		unsigned int n = length / HCFS_BLOCK_SIZE + (length % HCFS_BLOCK_SIZE ? 1 : 0);
+		unsigned int n = length / CPMFS_BLOCK_SIZE + (length % CPMFS_BLOCK_SIZE ? 1 : 0);
 		n              = blocks - n;
 
 		for (auto it = fatEntries_.rbegin(); it != fatEntries_.rend(); ++it) {
@@ -320,7 +275,7 @@ int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* inf
 				aunits--;
 			}
 
-			entry.recordCount_ = aunits * HCFS_BLOCK_SIZE / HCFS_RECORD_SIZE;
+			entry.recordCount_ = aunits * CPMFS_BLOCK_SIZE / CPMFS_RECORD_SIZE;
 			if (!entry.recordCount_ && n)
 				entry.clear();
 		}
@@ -328,7 +283,7 @@ int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* inf
 		return (n ? -ENOENT : 0);
 	}
 
-	std::vector<bool> blockMap(disk_->properties().size() / HCFS_BLOCK_SIZE, true);
+	std::vector<bool> blockMap(disk_->properties().size() / CPMFS_BLOCK_SIZE - firstBlock_, true);
 
 	blockMap.at(0) = false;
 	blockMap.at(1) = false;
@@ -349,7 +304,7 @@ int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* inf
 		return it - blockMap.begin();
 	};
 
-	unsigned int n = length / HCFS_BLOCK_SIZE + (length % HCFS_BLOCK_SIZE ? 1 : 0);
+	unsigned int n = length / CPMFS_BLOCK_SIZE + (length % CPMFS_BLOCK_SIZE ? 1 : 0);
 	n -= blocks;
 
 	bool full             = false;
@@ -386,13 +341,13 @@ int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* inf
 				break;
 
 			// wipe the block's contents
-			const std::vector<unsigned char> buf(HCFS_BLOCK_SIZE, HCFS_FREE_BYTE);
+			const std::vector<unsigned char> buf(CPMFS_BLOCK_SIZE, CPMFS_FREE_BYTE);
 			writeBlock(entry.allocationUnits_.at(aunits), buf);
 
 			n--;
 		}
 
-		entry.recordCount_ = aunits * HCFS_BLOCK_SIZE / HCFS_RECORD_SIZE;
+		entry.recordCount_ = aunits * CPMFS_BLOCK_SIZE / CPMFS_RECORD_SIZE;
 
 		full = entry.full();
 	}
@@ -400,7 +355,7 @@ int HCFS::truncate(const char* path, off_t length, struct fuse_file_info* /* inf
 	return (n ? -ENOSPC : 0);
 }
 
-int HCFS::open(const char* path, struct fuse_file_info* /* info */)
+int CPMFS::open(const char* path, struct fuse_file_info* /* info */)
 {
 	const fs::path __path{path};
 
@@ -413,7 +368,7 @@ int HCFS::open(const char* path, struct fuse_file_info* /* info */)
 	return -ENOENT;
 }
 
-int HCFS::read(const char* path, char* buf, size_t size, off_t offset, struct fuse_file_info* /* info */)
+int CPMFS::read(const char* path, char* buf, size_t size, off_t offset, struct fuse_file_info* /* info */)
 {
 	const fs::path __path{path};
 
@@ -435,8 +390,8 @@ int HCFS::read(const char* path, char* buf, size_t size, off_t offset, struct fu
 	if (offset >= totalSize)
 		return 0;
 
-	unsigned int blockPos    = offset / HCFS_BLOCK_SIZE;
-	unsigned int blockOffset = offset % HCFS_BLOCK_SIZE;
+	unsigned int blockPos    = offset / CPMFS_BLOCK_SIZE;
+	unsigned int blockOffset = offset % CPMFS_BLOCK_SIZE;
 	size_t remaining         = size;
 
 	for (const auto& entry : fatEntries_) {
@@ -472,7 +427,7 @@ int HCFS::read(const char* path, char* buf, size_t size, off_t offset, struct fu
 	return static_cast<int>(size - remaining);
 }
 
-int HCFS::write(const char* path, const char* buf, size_t size, off_t offset, struct fuse_file_info* info)
+int CPMFS::write(const char* path, const char* buf, size_t size, off_t offset, struct fuse_file_info* info)
 {
 	const fs::path __path{path};
 
@@ -495,11 +450,11 @@ int HCFS::write(const char* path, const char* buf, size_t size, off_t offset, st
 		auto ret = truncate(path, static_cast<off_t>(offset + size), info);
 		if (ret < 0)
 			return ret;
-		totalSize = ((offset + size) / HCFS_BLOCK_SIZE + ((offset + size) % HCFS_BLOCK_SIZE ? 1 : 0)) * HCFS_BLOCK_SIZE;
+		totalSize = ((offset + size) / CPMFS_BLOCK_SIZE + ((offset + size) % CPMFS_BLOCK_SIZE ? 1 : 0)) * CPMFS_BLOCK_SIZE;
 	}
 
-	unsigned int blockPos    = offset / HCFS_BLOCK_SIZE;
-	unsigned int blockOffset = offset % HCFS_BLOCK_SIZE;
+	unsigned int blockPos    = offset / CPMFS_BLOCK_SIZE;
+	unsigned int blockOffset = offset % CPMFS_BLOCK_SIZE;
 	size_t remaining         = size;
 
 	for (const auto& entry : fatEntries_) {
@@ -537,7 +492,7 @@ int HCFS::write(const char* path, const char* buf, size_t size, off_t offset, st
 	return static_cast<int>(size - remaining);
 }
 
-int HCFS::statfs(const char* path, struct statvfs* buf)
+int CPMFS::statfs(const char* path, struct statvfs* buf)
 {
 	const fs::path __path{path};
 
@@ -554,11 +509,11 @@ int HCFS::statfs(const char* path, struct statvfs* buf)
 			usedBlocks += entry.blocks();
 	}
 
-	const unsigned int totalBlocks = disk_->properties().size() / HCFS_BLOCK_SIZE - 2;
+	const unsigned int totalBlocks = disk_->properties().size() / CPMFS_BLOCK_SIZE - firstBlock_ - 2;
 
 	std::memset(buf, 0, sizeof(*buf));
-	buf->f_bsize   = HCFS_BLOCK_SIZE;
-	buf->f_frsize  = HCFS_BLOCK_SIZE;
+	buf->f_bsize   = CPMFS_BLOCK_SIZE;
+	buf->f_frsize  = CPMFS_BLOCK_SIZE;
 	buf->f_blocks  = totalBlocks;
 	buf->f_bfree   = totalBlocks - usedBlocks;
 	buf->f_bavail  = buf->f_bfree;
@@ -570,7 +525,7 @@ int HCFS::statfs(const char* path, struct statvfs* buf)
 	return 0;
 }
 
-int HCFS::release(const char* path, struct fuse_file_info* /* info */)
+int CPMFS::release(const char* path, struct fuse_file_info* /* info */)
 {
 	const fs::path __path{path};
 
@@ -583,8 +538,8 @@ int HCFS::release(const char* path, struct fuse_file_info* /* info */)
 	return -ENOENT;
 }
 
-int HCFS::readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t /* offset */, struct fuse_file_info* /* info */,
-                  enum fuse_readdir_flags /* flags */)
+int CPMFS::readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t /* offset */, struct fuse_file_info* /* info */,
+                   enum fuse_readdir_flags /* flags */)
 {
 	const fs::path __path{path};
 
@@ -614,7 +569,7 @@ int HCFS::readdir(const char* path, void* buf, fuse_fill_dir_t cb, off_t /* offs
 	return err;
 }
 
-int HCFS::create(const char* path, mode_t /* mode */, struct fuse_file_info* /* info */)
+int CPMFS::create(const char* path, mode_t /* mode */, struct fuse_file_info* /* info */)
 {
 	const fs::path __path{path};
 
@@ -639,21 +594,50 @@ int HCFS::create(const char* path, mode_t /* mode */, struct fuse_file_info* /* 
 	return -ENOSPC;
 }
 
-void HCFS::dumpFAT() const
+void CPMFS::dumpFAT() const
 {
-	const unsigned int start = dpb_.off_ * disk_->properties().sectorsPerTrack() * disk_->properties().sectorSize() / HCFS_BLOCK_SIZE;
-
 	std::vector<unsigned char> buf;
 
-	readBlock(start, buf);
+	readBlock(0, buf);
 	if (buf.empty())
 		std::cerr << "Warning: no data read for block #1\n";
 	else
 		hexdump(buf.data(), buf.size());
 
-	readBlock(start + 1, buf);
+	readBlock(1, buf);
 	if (buf.empty())
 		std::cerr << "Warning: no data read for block #2\n";
 	else
 		hexdump(buf.data(), buf.size());
+}
+
+void CPMFS::printFAT() const
+{
+	unsigned int n = 0;
+
+	for (const auto& entry : fatEntries_) {
+		if (!entry.free()) {
+			std::cout << "entry: " << n++ << "\n";
+			std::cout << "\tname: \"" << entry.name() << "\"";
+
+			if (entry.name_.at(entry.name_.size() - 3) & 0x80)
+				std::cout << " (read-only)";
+
+			if (entry.name_.at(entry.name_.size() - 2) & 0x80)
+				std::cout << " (hidden)";
+
+			if (entry.extent())
+				std::cout << " (extent)";
+
+			std::cout << "\n";
+
+			std::cout << "\trecord count: " << static_cast<unsigned int>(entry.recordCount_) << "\n";
+			std::cout << "\tallocation units: ";
+
+			for (const auto unit : entry.allocationUnits_)
+				std::cout << std::hex << std::setw(4) << std::setfill('0') << unit << " ";
+
+			std::cout << std::dec << "\n";
+		}
+	}
 }

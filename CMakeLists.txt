@@ -50,7 +50,7 @@ configure_file(
 	@ONLY
 )
 
-add_executable(fuse-spectrum src/disk.cpp src/filesystem.cpp src/hcfs.cpp src/dsk.cpp src/imd.cpp src/main.cpp)
+add_executable(fuse-spectrum src/disk.cpp src/filesystem.cpp src/hcfs.cpp src/dsk.cpp src/imd.cpp src/main.cpp src/cpmfs.cpp)
 target_include_directories(fuse-spectrum PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(fuse-spectrum PRIVATE FUSE_USE_VERSION=30)
 target_link_libraries(fuse-spectrum PRIVATE common_exe_flags ${FUSE_LIBRARIES} Threads::Threads)
