@@ -21,7 +21,7 @@ static void help(const char* progname)
 	version();
 	std::cout << "Usage: " << progname << " [options] <mountpoint>\n";
 	std::cout << "    --file=<disk-image>    The path to the disk image to load\n";
-	std::cout << "    --filesystem=<fs>      The filesystem type (default: hc)\n\n";
+	std::cout << "    --filesystem=<fs>      The filesystem type (cpm, hc (default))\n\n";
 }
 
 int main(int argc, char* argv[])
