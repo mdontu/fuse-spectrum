@@ -328,7 +328,9 @@ int CPMFS::truncate(const char* path, off_t length, struct fuse_file_info* /* in
 			entry.clear();
 			entry.userCode_ = 0;
 			entry.setName(__path.filename());
-			entry.exLo_ = extents++;
+			entry.exLo_ = extents % 32;
+			entry.exHi_ = extents / 32;
+			extents++;
 		}
 
 		unsigned int aunits = 0;

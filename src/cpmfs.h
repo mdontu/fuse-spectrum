@@ -49,12 +49,12 @@ class CPMFS final : public Filesystem {
 
 		bool extent() const
 		{
-			return !!exLo_;
+			return exLo_ || exHi_;
 		}
 
 		bool full() const
 		{
-			return (recordCount_ >= (std::size(allocationUnits_) * CPMFS_BLOCK_SIZE / 128));
+			return (recordCount_ >= (allocationUnits_.size() * CPMFS_BLOCK_SIZE / CPMFS_RECORD_SIZE));
 		}
 
 		std::string name() const
@@ -88,12 +88,14 @@ class CPMFS final : public Filesystem {
 
 		unsigned int size() const
 		{
-			return recordCount_ * 128;
+			return recordCount_ * CPMFS_RECORD_SIZE;
 		}
 
 		unsigned int blocks() const
 		{
-			return (std::size(allocationUnits_) - std::count(allocationUnits_.begin(), allocationUnits_.end(), 0));
+			return std::count_if(allocationUnits_.begin(), allocationUnits_.end(), [](const auto& v) {
+				return v != 0;
+			});
 		}
 	};
 #pragma pack(pop)
