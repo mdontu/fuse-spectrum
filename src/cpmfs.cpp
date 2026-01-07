@@ -253,9 +253,11 @@ int CPMFS::truncate(const char* path, off_t length, struct fuse_file_info* /* in
 		return 0;
 
 	if (length < size) {
+		// Compute the number of blocks that have to be freed
 		unsigned int n = length / CPMFS_BLOCK_SIZE + (length % CPMFS_BLOCK_SIZE ? 1 : 0);
 		n              = blocks - n;
 
+		// Walk the FAT entries in reverse and clear the extra blocks
 		for (auto it = fatEntries_.rbegin(); it != fatEntries_.rend(); ++it) {
 			auto& entry = *it;
 
@@ -275,8 +277,13 @@ int CPMFS::truncate(const char* path, off_t length, struct fuse_file_info* /* in
 				aunits--;
 			}
 
-			entry.recordCount_ = aunits * CPMFS_BLOCK_SIZE / CPMFS_RECORD_SIZE;
-			if (!entry.recordCount_ && n)
+			if (!n) {
+				// This is the last entry
+				const auto recordsPerEntry = entry.allocationUnits_.size() * CPMFS_BLOCK_SIZE / CPMFS_RECORD_SIZE;
+				const auto recordsNeeded   = length / CPMFS_RECORD_SIZE + (length % CPMFS_RECORD_SIZE ? 1 : 0);
+
+				entry.recordCount_ = recordsNeeded % recordsPerEntry;
+			} else
 				entry.clear();
 		}
 
@@ -349,7 +356,14 @@ int CPMFS::truncate(const char* path, off_t length, struct fuse_file_info* /* in
 			n--;
 		}
 
-		entry.recordCount_ = aunits * CPMFS_BLOCK_SIZE / CPMFS_RECORD_SIZE;
+		if (!n) {
+			// This is the last entry
+			const auto recordsPerEntry = entry.allocationUnits_.size() * CPMFS_BLOCK_SIZE / CPMFS_RECORD_SIZE;
+			const auto recordsNeeded   = length / CPMFS_RECORD_SIZE + (length % CPMFS_RECORD_SIZE ? 1 : 0);
+
+			entry.recordCount_ = recordsNeeded % recordsPerEntry;
+		} else
+			entry.recordCount_ = aunits * CPMFS_BLOCK_SIZE / CPMFS_RECORD_SIZE;
 
 		full = entry.full();
 	}
