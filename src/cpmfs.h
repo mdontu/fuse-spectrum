@@ -15,13 +15,15 @@ class CPMFS final : public Filesystem {
 	static constexpr auto CPMFS_RECORD_SIZE          = 128u;
 	static constexpr auto CPMFS_BLOCK_SIZE           = 2048u;
 	static constexpr unsigned char CPMFS_FREE_BYTE   = 0xe5;
-	static constexpr auto CPMFS_FILENAME_MAXSIZE     = 11u;
+	static constexpr auto CPMFS_FILENAME_MAXSIZE     = 8u;
+	static constexpr auto CPMFS_FILETYPE_MAXSIZE     = 3u;
 	static constexpr auto CPMFS_MAX_ALLOCATION_UNITS = 8u;
 
 #pragma pack(push, 1)
 	struct FATEntry {
 		unsigned char userCode_{};
 		std::array<char, CPMFS_FILENAME_MAXSIZE> name_{};
+		std::array<char, CPMFS_FILETYPE_MAXSIZE> type_{};
 		unsigned char exLo_{};
 		unsigned char reserved_{};
 		unsigned char exHi_{};
@@ -33,6 +35,7 @@ class CPMFS final : public Filesystem {
 			userCode_ = CPMFS_FREE_BYTE;
 
 			name_.fill(' ');
+			type_.fill(' ');
 
 			exLo_        = 0;
 			reserved_    = 0;
@@ -60,6 +63,7 @@ class CPMFS final : public Filesystem {
 		std::string name() const
 		{
 			std::string ret;
+			ret.reserve(name_.size() + type_.size() + 1);
 
 			for (const auto& c : name_)
 				ret += c & 0x7f;
@@ -67,9 +71,18 @@ class CPMFS final : public Filesystem {
 			while (!ret.empty() && ret.back() == ' ')
 				ret.pop_back();
 
-			for (auto it = ret.begin(); it != ret.end(); ++it) {
-				if (*it == '/')
-					*it = '?';
+			const auto c = std::count_if(type_.begin(), type_.end(), [](const auto& v) {
+				return v != ' ';
+			});
+
+			if (c) {
+				ret += '.';
+
+				for (const auto& c : type_)
+					ret += c & 0x7f;
+
+				while (!ret.empty() && ret.back() == ' ')
+					ret.pop_back();
 			}
 
 			return ret;
@@ -78,7 +91,16 @@ class CPMFS final : public Filesystem {
 		void setName(const std::string& name)
 		{
 			name_.fill(' ');
-			std::copy_n(name.begin(), std::min(name.size(), name_.size()), name_.begin());
+			type_.fill(' ');
+
+			const auto p = name.rfind('.');
+			if (p == std::string::npos)
+				std::copy_n(name.begin(), std::min(name.length(), name_.size()), name_.begin());
+			else {
+				std::copy_n(name.begin(), std::min(p, name_.size()), name_.begin());
+				if (p < name.length())
+					std::copy_n(name.begin() + p + 1, std::min(name.length() - p, type_.size()), type_.begin());
+			}
 		}
 
 		bool operator==(const std::string& other) const

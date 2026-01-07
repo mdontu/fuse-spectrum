@@ -536,7 +536,7 @@ int CPMFS::statfs(const char* path, struct statvfs* buf)
 	buf->f_files   = fatEntries_.size();
 	buf->f_ffree   = freeEntries;
 	buf->f_favail  = buf->f_ffree;
-	buf->f_namemax = sizeof(FATEntry::name_);
+	buf->f_namemax = sizeof(FATEntry::name_) + sizeof(FATEntry::type_) + 1;
 
 	return 0;
 }
@@ -636,10 +636,10 @@ void CPMFS::printFAT() const
 			std::cout << "entry: " << n++ << "\n";
 			std::cout << "\tname: \"" << entry.name() << "\"";
 
-			if (entry.name_.at(entry.name_.size() - 3) & 0x80)
+			if (entry.type_.at(0) & 0x80)
 				std::cout << " (read-only)";
 
-			if (entry.name_.at(entry.name_.size() - 2) & 0x80)
+			if (entry.type_.at(1) & 0x80)
 				std::cout << " (hidden)";
 
 			if (entry.extent())
