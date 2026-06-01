@@ -51,6 +51,14 @@ public:
 
 	~DSK() override = default;
 
+	DSK(const DSK&) = delete;
+
+	DSK& operator=(const DSK&) = delete;
+
+	DSK(DSK&&) = delete;
+
+	DSK& operator=(DSK&&) = delete;
+
 	const DiskProperties& properties() const override
 	{
 		return properties_;

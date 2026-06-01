@@ -62,7 +62,7 @@ class HCFS final : public Filesystem {
 			std::string ret;
 
 			for (const auto& c : name_)
-				ret += c & 0x7f;
+				ret += static_cast<char>(c & 0x7f);
 
 			while (!ret.empty() && ret.back() == ' ')
 				ret.pop_back();
@@ -139,6 +139,14 @@ public:
 	HCFS(Disk* disk);
 
 	~HCFS() override;
+
+	HCFS(const HCFS&) = delete;
+
+	HCFS& operator=(const HCFS&) = delete;
+
+	HCFS(HCFS&&) = delete;
+
+	HCFS& operator=(HCFS&&) = delete;
 
 	int getattr(const char* path, struct stat* buf, struct fuse_file_info* info) override;
 

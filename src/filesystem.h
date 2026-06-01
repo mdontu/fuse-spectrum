@@ -35,6 +35,14 @@ public:
 
 	virtual ~Filesystem() = default;
 
+	Filesystem(const Filesystem&) = delete;
+
+	Filesystem& operator=(const Filesystem&) = delete;
+
+	Filesystem(Filesystem&&) = delete;
+
+	Filesystem& operator=(Filesystem&&) = delete;
+
 	int main(std::span<char*> args);
 
 	virtual int getattr(const char* path, struct stat* buf, struct fuse_file_info* info) = 0;

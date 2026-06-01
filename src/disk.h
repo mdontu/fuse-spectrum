@@ -32,6 +32,14 @@ public:
 
 	virtual ~Disk() = default;
 
+	Disk(const Disk&) = delete;
+
+	Disk& operator=(const Disk&) = delete;
+
+	Disk(Disk&&) = delete;
+
+	Disk& operator=(Disk&&) = delete;
+
 	virtual const DiskProperties& properties() const = 0;
 
 	virtual const Sector& read(unsigned int pos) const = 0;

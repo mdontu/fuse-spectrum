@@ -122,6 +122,14 @@ public:
 
 	~IMD() override = default;
 
+	IMD(const IMD&) = delete;
+
+	IMD& operator=(const IMD&) = delete;
+
+	IMD(IMD&&) = delete;
+
+	IMD& operator=(IMD&&) = delete;
+
 	const DiskProperties& properties() const override
 	{
 		return properties_;

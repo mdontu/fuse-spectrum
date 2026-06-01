@@ -66,7 +66,7 @@ class CPMFS final : public Filesystem {
 			ret.reserve(name_.size() + type_.size() + 1);
 
 			for (const auto& c : name_)
-				ret += c & 0x7f;
+				ret += static_cast<char>(c & 0x7f);
 
 			while (!ret.empty() && ret.back() == ' ')
 				ret.pop_back();
@@ -79,7 +79,7 @@ class CPMFS final : public Filesystem {
 				ret += '.';
 
 				for (const auto& c : type_)
-					ret += c & 0x7f;
+					ret += static_cast<char>(c & 0x7f);
 
 				while (!ret.empty() && ret.back() == ' ')
 					ret.pop_back();
@@ -99,7 +99,7 @@ class CPMFS final : public Filesystem {
 			else {
 				std::copy_n(name.begin(), std::min(p, name_.size()), name_.begin());
 				if (p < name.length())
-					std::copy_n(name.begin() + p + 1, std::min(name.length() - p, type_.size()), type_.begin());
+					std::copy_n(name.begin() + static_cast<long>(p) + 1, std::min(name.length() - p, type_.size()), type_.begin());
 			}
 		}
 
@@ -162,6 +162,14 @@ public:
 	CPMFS(Disk* disk);
 
 	~CPMFS() override;
+
+	CPMFS(const CPMFS&) = delete;
+
+	CPMFS& operator=(const CPMFS&) = delete;
+
+	CPMFS(CPMFS&&) = delete;
+
+	CPMFS& operator=(CPMFS&&) = delete;
 
 	int getattr(const char* path, struct stat* buf, struct fuse_file_info* info) override;
 
