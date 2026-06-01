@@ -20,6 +20,13 @@ if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
 endif()
 
+find_program(CLANG_TIDY_EXE "clang-tidy")
+
+if(CLANG_TIDY_EXE)
+	message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
+	set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXE})
+endif()
+
 add_library(common_exe_flags INTERFACE)
 target_compile_definitions(common_exe_flags INTERFACE
 	$<$<CONFIG:Debug>:_GLIBCXX_ASSERTIONS>
